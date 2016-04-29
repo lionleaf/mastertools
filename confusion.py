@@ -9,9 +9,21 @@ yolo_path = '../darknet'
 output_dir = os.getcwd() + '/output'
 
 #Generates the files.txt file required for yolo to read the dataset for all datasets in the folder
-def generateFileLists(datasets):
-  print "todo"
-  #todo
+def generateFilelists(nr_of_files = 0):
+  for dataset in os.listdir(datasets_path):
+    nr = 0
+    cpath = os.getcwd() + '/' + datasets_path + '/' + dataset
+    try:
+      filelist = open(cpath + '/files.txt', 'w')
+    except:
+      continue
+    for filen in os.listdir(cpath+'/images'):
+      if filen.endswith('.jpg'):
+        nr += 1
+        filelist.write(cpath+'/images/'+filen+'\n')
+        if nr_of_files and nr >= nr_of_files:
+          break;
+    filelist.close()
 
 def testWeight(weight_file):
   for dataset in os.listdir(datasets_path):
@@ -36,7 +48,6 @@ def testAll():
     testWeight(os.getcwd() + '/' + weights_path + "/" + weight)
 
 
-#testAll()
 
 def generateMatrix(outfile):
   output = open(outfile, 'a')
@@ -61,6 +72,7 @@ def generateMatrix(outfile):
   output.write('\n\n\n')
   output.close()
 
-
-generateMatrix("output/matrix.txt")
+#generateFilelists(1000)
+#testAll()
+generateMatrix(output_dir+"/matrix.txt")
 

@@ -2,11 +2,11 @@
 import os
 import subprocess
 
-datasets_path = '../datasets'
-weights_path = '../weights'
+datasets_path = '../kittiset'
+weights_path = '../weights/exp_05_04_imagenetbg_wide'
 yolo_path = '../darknet'
 
-output_dir = os.getcwd() + '/output'
+output_dir = os.getcwd() + '/output/exp_05_04_imagenetbg_better'
 
 weight_files = os.listdir(weights_path)
 weight_files.sort()
@@ -63,7 +63,7 @@ def testAll(redo):
   print 'Testing all files! Redo = ' + str(redo)
   for weight in weight_files:
     testWeight(redo, os.getcwd() + '/' + weights_path + "/" + weight)
-
+    #testWeight(redo, weights_path + "/" + weight)
 
 
 def generateMatrix(outfile):
@@ -71,7 +71,7 @@ def generateMatrix(outfile):
   output = open(outfile, 'a')
 
   for weight in weight_files:
-    output.write("\t"+weight)
+    output.write(","+weight)
   output.write('\n')
   for dataset in dataset_files:
     if dataset == ".DS_Store":
@@ -83,9 +83,9 @@ def generateMatrix(outfile):
         outfile = open(outfile_name,'r')
         #ugly oneliner: Read all lines into memory, get the last one, split by ":" and get last
         #should give final %-age
-        output.write("\t"+outfile.readlines()[-1].split(":")[-1].strip()) #ugly
+        output.write(","+outfile.readlines()[-1].split(":")[-1].strip()) #ugly
       except:
-        output.write("\t" + "N/A")
+        output.write("," + "N/A")
     output.write('\n')
   output.write('\n\n\n')
   output.close()

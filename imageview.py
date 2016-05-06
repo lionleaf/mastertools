@@ -1,83 +1,141 @@
-import matplotlib.pyplot as plt
+# -*- coding: utf-8 -*-
+
 import numpy as np
 import os
+from sys import argv
 from scipy import ndimage, misc
-from matplotlib import pyplot
-import matplotlib as mpl
+import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+from matplotlib.widgets import Button, RadioButtons
 
-image_path = 'data/images/'
-label_path = 'data/labels/'
-image_files = os.listdir(image_path)
-label_files = os.listdir(label_path)
-
-image_size = 498
+image_width = 896
+image_height = 896
 pixel_depth = 255
 
-dataset_size = len(image_files) 
-print("Dataset_size = " + str(dataset_size))
-i=0
-dataset = np.ndarray(shape=(dataset_size, image_size, image_size, 3),
-                     dtype=np.float32)
-for image_file in image_files:
+
+def load_image(image_filename):
+    image_filename = image_filename.strip()
     try:
-        image_file = image_file.strip()
-        img_raw = misc.imresize(ndimage.imread(image_path + image_file), (image_size, 
-                                                             image_size))
-        image_data = (img_raw.astype(float) - 
-                        pixel_depth / 2) / pixel_depth
-        dataset[i, :, :, :] = image_data
-        i+=1
-        print(i)
+        img_raw = misc.imresize(ndimage.imread(image_filename),
+                                (image_height, image_width))
+        image_data = (img_raw.astype(float) - pixel_depth / 2) / pixel_depth
     except IOError as e:
-        print('Could not read:', image_path + image_file, ':', e, '- it\'s ok, skipping.')
+        print 'Could not read:', image_filename, ':', e
+
+    return image_data
 
 
-classes = ["car"]
+def load_labels(label_filename):
+    labels = np.ndarray(shape=(27, 5), dtype=np.float32)
+    labels.fill(-1)
 
-dataset_size = len(label_files)
-i=0
-labels = np.ndarray(shape=(dataset_size, 27, 5), dtype=np.float32)
-labels.fill(-1)
-
-for label_filename in label_files:
     try:
-        if (label_filename == ".DS_Store"):
-          continue;
-        label_file = open(label_path + label_filename)
-        count = 0
-        for line in label_file:
-            labels[i,count,:] = line.split()
-            count+=1
-        i += 1
-        count += 1
-        print(i)
+        if (label_filename == '.DS_Store'):
+            return
+
+        with open(label_filename, 'r') as label_file:
+            count = 0
+            for line in label_file:
+                labels[count, :] = line.split()
+                count += 1
+            count += 1
     except IOError as e:
-        print('Could not read:', label_path + label_filename, ':', e, '- it\'s ok, skipping.')
+        print 'Could not read:', label_filename, ':', e
 
-print("Labels loaded")
+    return labels
 
 
+patches = []
+image_display = None
 
-def showImageData(index):
 
-  pyplot.imshow(dataset[index,:,:,:] + 0.5)
+def show_image_data(image, labels):
+    for patch in patches:
+        patch.remove()
+    del patches[:]
 
-  for box in labels[index]:
-    if(box[0] < 0):
-      break; #end of classes for this img
+    global image_display
+    if image_display:
+        image_display.set_data(image[:, :, :] + 0.5)
+    else:
+        image_display = plt.imshow(image[:, :, :] + 0.5)
 
-    print(classes[int(box[0])])
+    for box in labels:
+        if box[0] < 0:
+            break  # end of classes for this img
+
+        rectangle = Rectangle((box[1]*image_width - box[3]*image_width*0.5,
+                               box[2]*image_height - box[4]*image_height*0.5),
+                              box[3]*image_width, box[4]*image_height,
+                              ec='red', fill=False)
+        patches.append(rectangle)
+        ca.add_patch(rectangle)
+    plt.draw()
+
+
+def show_image(image_filename, label_filename=None):
+    if not label_filename:
+        label_filename = image_filename.replace('.jpg', '.txt') \
+                                       .replace('/images/', '/labels/')
+    image = load_image(image_filename)
+    labels = load_labels(label_filename)
+    show_image_data(image, labels)
+
+    plt.axes()
+    plt.title(image_filename, fontsize=14)
+
+
+class Index(object):
+    ind = 0
+
+    def __init__(self, image_filenames, radio):
+        self.image_filenames = image_filenames
+        self.radio = radio
+
+    def next(self, event):
+        self.skip(int(self.radio.value_selected))
+
+    def prev(self, event):
+        self.skip(-int(self.radio.value_selected))
+
+    def skip(self, amount):
+        self.ind = (self.ind + amount) % len(self.image_filenames)
+        plt.suptitle(self.ind, fontsize=14)
+        show_image(self.image_filenames[self.ind])
+
+
+def open_path(path):
+    global bnext, bprev, bskip, radio
+    image_filenames = map(lambda filename: os.path.join(path, filename),
+                          filter(lambda filename: filename[0] != '.',
+                                 os.listdir(path)))
+    print 'Opened path:', path
+
+    show_image(image_filenames[0])
+    plt.suptitle(0, fontsize=14)
+
+    rax = plt.axes([0.85, 0.15, 0.1, 0.15])
+    radio = RadioButtons(rax, ('1', '5', '10', '100', '500', '1000'), 0)
+
+    callback = Index(image_filenames, radio)
+    axprev = plt.axes([0.85, 0.05, 0.05, 0.075])
+    axnext = plt.axes([0.9, 0.05, 0.05, 0.075])
+    bnext = Button(axnext, '>')
+    bnext.on_clicked(callback.next)
+    bprev = Button(axprev, '<')
+    bprev.on_clicked(callback.prev)
+
+
+if __name__ == '__main__':
     ca = plt.gca()
-    ca.add_patch(Rectangle((box[1]*image_size - box[3]*image_size*0.5 
-                            ,box[2]*image_size - box[4]*image_size*0.5 )
-                            , box[3]*image_size, box[4]*image_size, ec="red", fill=False))
 
-  pyplot.show()
+    if argv[1]:
+        if argv[1][-3:] == 'jpg':
+            image_filename = argv[1]
+            show_image(image_filename)
+        else:
+            open_path(argv[1])
+    else:
+        open_path('data/images/')
 
-
-
-for i in xrange(10):
-  showImageData(i);
-
-print('Done!')
+    plt.show()

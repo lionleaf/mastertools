@@ -2,11 +2,11 @@
 import os
 import subprocess
 
-datasets_path = '../kittiset'
-weights_path = '../weights/exp_05_04_imagenetbg_wide'
-yolo_path = '../darknet'
+datasets_path = '../datasets'
+weights_path = '../weights'
+yolo_path = '/home/stiaje/darknet'
 
-output_dir = os.getcwd() + '/output/exp_05_04_imagenetbg_better'
+output_dir = '../recall'
 
 weight_files = os.listdir(weights_path)
 weight_files.sort()
@@ -38,33 +38,72 @@ def generateFilelists(nr_of_files = 0):
 
 def testWeight(redo, weight_file):
   for dataset in dataset_files:
-    if dataset == '.DS_Store':
-      continue
-    dataset_path = os.getcwd() + '/' + datasets_path+'/'+dataset+"/files.txt"
-    outfile_name = output_dir+'/'+weight_file.split("/")[-1]+"-"+dataset
-    if(os.path.isfile(outfile_name)):
-      print '\nresult file already exists. Skipping: ' + outfile_name
-      continue
-    outfile = open(outfile_name,'a')
+    runRecall(redo, dataset, weight_file)
 
-    print '\nStarting ' + outfile_name
+def runRecall(redo, dataset, weight_file):
+  if dataset == '.DS_Store':
+    return
+  if not weight_file.endswith(".weights"):
+    return  #folder?!
+  dataset_path = os.getcwd() + '/' + datasets_path+'/'+dataset+"/files.txt"
+  weight_path = os.getcwd() + '/' + weights_path+'/'+weight_file
+  outfile_name = output_dir+'/'+weight_file.split("/")[-1]+"-"+dataset
+  if(os.path.isfile(outfile_name)):
+    print '\nresult file already exists. Skipping: ' + outfile_name
+    return
+  outfile = open(outfile_name,'a')
 
-    yolo_process = subprocess.Popen(["./darknet", 'yolo', 'recall', 'cfg/singleclass.cfg', weight_file, dataset_path], cwd=yolo_path, stderr=outfile)
+  print '\nStarting ' + outfile_name
 
-    if yolo_process.wait() != 0:
-      print "YOLO fail"
-    else:
-      print "\nCompleted " + outfile_name
+  yolo_process = subprocess.Popen(["./darknet", 'yolo', 'recall', 'cfg/singleclass.cfg', weight_path, dataset_path], cwd=yolo_path, stderr=outfile)
 
-    outfile.close()
+  if yolo_process.wait() != 0:
+    print "YOLO fail"
+  else:
+    print "\nCompleted " + outfile_name
 
+  outfile.close()
 
 def testAll(redo):
   print 'Testing all files! Redo = ' + str(redo)
   for weight in weight_files:
-    testWeight(redo, os.getcwd() + '/' + weights_path + "/" + weight)
+    testWeight(redo, weight)
     #testWeight(redo, weights_path + "/" + weight)
 
+
+def kittiAll(redo):
+  print 'Kitti on all files! Redo = ' + str(redo)
+  for weight in weight_files:
+    runRecall(redo, 'kitti', weight)
+
+
+def dumpRow(output, dataset):
+  if dataset == ".DS_Store":
+    return
+  output.write(dataset)
+  for weight in weight_files:
+    outfile_name = output_dir+'/'+weight+"-"+dataset
+    try:
+      outfile = open(outfile_name,'r')
+      #ugly oneliner: Read all lines into memory, get the last one, split by ":" and get last
+      #should give final %-age
+      output.write(","+outfile.readlines()[-1].split(":")[-1].strip()) #ugly
+    except:
+      output.write("," + "N/A")
+  output.write('\n')
+
+
+def kittiMatrix():
+
+  print '\ngenerating kitti matrix'
+  output = open(output_dir + "/kitti.txt", 'a')
+
+  for weight in weight_files:
+    output.write(","+weight)
+  output.write('\n')
+  dumpRow(output, 'kitti')
+  output.write('\n\n\n')
+  output.close()
 
 def generateMatrix(outfile):
   print '\ngenerating matrix'
@@ -74,23 +113,13 @@ def generateMatrix(outfile):
     output.write(","+weight)
   output.write('\n')
   for dataset in dataset_files:
-    if dataset == ".DS_Store":
-      continue
-    output.write(dataset)
-    for weight in weight_files:
-      outfile_name = output_dir+'/'+weight+"-"+dataset
-      try:
-        outfile = open(outfile_name,'r')
-        #ugly oneliner: Read all lines into memory, get the last one, split by ":" and get last
-        #should give final %-age
-        output.write(","+outfile.readlines()[-1].split(":")[-1].strip()) #ugly
-      except:
-        output.write("," + "N/A")
-    output.write('\n')
+    dumpRow(output, dataset)
   output.write('\n\n\n')
   output.close()
 
-#generateFilelists()
-#testAll(False)
+generateFilelists()
+#kittiAll(False)
+#kittiMatrix()
+testAll(False)
 generateMatrix(output_dir+"/matrix.txt")
 

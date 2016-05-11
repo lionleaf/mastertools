@@ -110,7 +110,11 @@ def open_path(path):
                           filter(lambda filename: filename[0] != '.',
                                  os.listdir(path)))
     print 'Opened path:', path
+    open_list(image_filenames)
 
+
+def open_list(image_filenames):
+    global bnext, bprev, bskip, radio
     show_image(image_filenames[0])
     plt.suptitle(0, fontsize=14)
 
@@ -133,6 +137,11 @@ if __name__ == '__main__':
         if argv[1][-3:] == 'jpg':
             image_filename = argv[1]
             show_image(image_filename)
+        elif argv[1][-3:] == 'txt':
+            with open(argv[1], 'r') as f:
+                image_filenames = map(lambda filename: filename.strip(),
+                                      f.readlines())
+                open_list(image_filenames)
         else:
             open_path(argv[1])
     else:

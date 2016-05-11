@@ -1,10 +1,12 @@
 #Given one folder of datasets and one folder of weight, it runs every weight on every dataset
 import os
+import sys
+import argparse
 import subprocess
 
 datasets_path = '../datasets'
 weights_path = '../weights'
-yolo_path = '/home/stiaje/darknet'
+yolo_path = '../darknet'
 
 output_dir = '../recall'
 
@@ -117,9 +119,25 @@ def generateMatrix(outfile):
   output.write('\n\n\n')
   output.close()
 
-generateFilelists()
-#kittiAll(False)
-#kittiMatrix()
-testAll(False)
-generateMatrix(output_dir+"/matrix.txt")
+
+parser = argparse.ArgumentParser(description='Description of your program')
+parser.add_argument('action', help='Calculate a matrix of all results')
+parser.add_argument('-n','--nocalc', help='Skip the calculation and just compile the result file', action='store_true', required=False)
+args = vars(parser.parse_args())
+
+if args['action'] == 'matrix':
+  print "matrix!!"
+  if not args['nocalc']:
+    print "matrix!!"
+    generateFilelists()
+    testAll(False)
+  generateMatrix(output_dir+"/matrix.txt")
+elif args['action'] == 'kitti':
+  print "kitti!!"
+  if not args['nocalc']:
+    generateFilelists()
+    kittiAll(False)
+  kittiMatrix()
+else:
+  print "invalid action!"
 

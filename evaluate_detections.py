@@ -129,7 +129,10 @@ def from_recall_output(contents, ground_truths):
         if i != 0:
             boxes_in_image -= int(detection_info[i-1].group(2))
 
-        recall_per_image.append(float(detections_in_image) / boxes_in_image)
+        if boxes_in_image > 0:
+            recall_per_image.append(float(detections_in_image) / boxes_in_image)
+        else:
+            recall_per_image.append(0)
 
     good_list = []
     bad_list = []

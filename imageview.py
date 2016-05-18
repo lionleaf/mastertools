@@ -76,7 +76,8 @@ def show_image_data(image, labels):
 def show_image(image_filename, label_filename=None):
     if not label_filename:
         label_filename = image_filename.replace('.jpg', '.txt') \
-                                       .replace('/images/', '/labels/')
+                                       .replace('/images/', '/labels/') \
+                                       .replace('/JPEGImages/', '/labels/')
     image = load_image(image_filename)
     labels = load_labels(label_filename)
     show_image_data(image, labels)

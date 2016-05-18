@@ -127,7 +127,7 @@ def generateMatrix(outfile):
 
 
 parser = argparse.ArgumentParser(description='Description of your program')
-parser.add_argument('action', help='Calculate a matrix of all results')
+parser.add_argument('action', help='matrix for the matrix, kitti for only kitti, kittiplot for plotting kitti performance over training time')
 parser.add_argument('-n','--nocalc', help='Skip the calculation and just compile the result file', action='store_true', required=False)
 args = vars(parser.parse_args())
 

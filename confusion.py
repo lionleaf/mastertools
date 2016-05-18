@@ -6,7 +6,7 @@ import subprocess
 
 datasets_path = '../datasets'
 weights_path = '../weights'
-yolo_path = '../darknet'
+yolo_path = '/home/stiaje/darknet'
 
 output_dir = '../recall'
 
@@ -26,9 +26,11 @@ def generateFilelists(nr_of_files = 0):
   for dataset in dataset_files:
     nr = 0
     cpath = os.getcwd() + '/' + datasets_path + '/' + dataset
+    print 'generating file.txt for ', dataset, cpath
     try:
-      filelist = open(cpath + '/files.txt', 'w')
+      filelist = open(cpath + '/files.txt', 'w+')
     except:
+      print 'Exception opening new file!!'
       continue
     for filen in os.listdir(cpath+'/images'):
       if filen.endswith('.jpg'):
@@ -84,6 +86,8 @@ def dumpRow(output, dataset):
     return
   output.write(dataset)
   for weight in weight_files:
+    if not weight.endswith(".weights"):
+      continue
     outfile_name = output_dir+'/'+weight+"-"+dataset
     try:
       outfile = open(outfile_name,'r')
@@ -112,6 +116,8 @@ def generateMatrix(outfile):
   output = open(outfile, 'a')
 
   for weight in weight_files:
+    if not weight.endswith(".weights"):
+      continue
     output.write(","+weight)
   output.write('\n')
   for dataset in dataset_files:

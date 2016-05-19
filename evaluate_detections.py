@@ -94,7 +94,7 @@ def from_validation_output(predictions, ground_truths):
             if best_iou >= 0.5:
                 detected_objects += 1
 
-        if float(detected_objects) / len(boxes) > 0:
+        if len(boxes) > 0 and float(detected_objects) / len(boxes) > 0:
             good_list.append(imagepath)
         else:
             bad_list.append(imagepath)

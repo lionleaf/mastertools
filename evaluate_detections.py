@@ -13,6 +13,7 @@ python evaluate_detections.py valid <predicted-boxes> <ground-truth-list>
 from os import path
 from sys import argv
 from PIL import Image
+from loaders import load_predicted_boxes
 import re
 
 
@@ -40,15 +41,8 @@ def calculate_area(rect):
     return (rect['xmax'] - rect['xmin']) * (rect['ymax'] - rect['ymin'])
 
 
-def from_validation_output(contents, ground_truths):
-    detections_per_image = {}
-    for line in contents:
-        basename, prediction = line.split(' ', 1)
-        prediction = prediction.split(' ')
-        if basename in detections_per_image:
-            detections_per_image[basename].append(prediction)
-        else:
-            detections_per_image[basename] = [prediction]
+def from_validation_output(predictions, ground_truths):
+    detections_per_image = load_predicted_boxes(predictions)
 
     truths = {}
 
@@ -100,19 +94,18 @@ def from_validation_output(contents, ground_truths):
             if best_iou >= 0.5:
                 detected_objects += 1
 
-            # print '### %s: %f' % (image, best_iou)
-
         if float(detected_objects) / len(boxes) > 0:
             good_list.append(imagepath)
         else:
             bad_list.append(imagepath)
 
         accumulated_detected_objects += detected_objects
-        print ('recall', image,
-               float(accumulated_detected_objects) / total_number_of_boxes)
+
+        # print ('recall', image,
+        #        float(accumulated_detected_objects) / total_number_of_boxes)
         # print ground_truth
         # print detections_per_image[image]
-    write_output(good_list, bad_list)
+    return (good_list, bad_list)
 
 
 def from_recall_output(contents, ground_truths):
@@ -130,7 +123,8 @@ def from_recall_output(contents, ground_truths):
             boxes_in_image -= int(detection_info[i-1].group(2))
 
         if boxes_in_image > 0:
-            recall_per_image.append(float(detections_in_image) / boxes_in_image)
+            recall_per_image.append(float(detections_in_image) /
+                                    boxes_in_image)
         else:
             recall_per_image.append(0)
 
@@ -146,7 +140,7 @@ def from_recall_output(contents, ground_truths):
         else:
             bad_list.append(filenames[i])
 
-    write_output(good_list, bad_list)
+    return (good_list, bad_list)
 
 
 def write_output(good_list, bad_list):
@@ -160,11 +154,13 @@ if __name__ == '__main__':
     if path.isfile('good_list.txt') or path.isfile('bad_list.txt'):
         print 'good_list.txt and/or bad_list.txt already exists'
         exit(0)
+
     if argv[1] == 'recall':
         with open(argv[2], 'r') as f:
             contents = map(lambda line: line.strip(), f.readlines())
-            from_recall_output(contents, argv[3])
-    if argv[1] == 'valid':
-        with open(argv[2], 'r') as f:
-            contents = map(lambda line: line.strip(), f.readlines())
-            from_validation_output(contents, argv[3])
+            write_output(from_recall_output(contents, argv[3]))
+    elif argv[1] == 'valid':
+        write_output(from_validation_output(argv[2], argv[3]))
+    else:
+        print 'Unkown command'
+        print 'Try \'recall\' or \'valid\''

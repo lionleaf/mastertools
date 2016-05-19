@@ -1,15 +1,43 @@
 # -*- coding: utf-8 -*-
 
+"""
+Open one image to inspect its labels:
+```
+python imageview.py data/images/image.jpg
+```
+
+Open a folder to browse all its images:
+```
+python imageview.py data/images/
+```
+
+Open a list of images from a txt-file:
+```
+python imageview.py good_list.txt
+```
+
+Browse good/bad detections:
+```
+python imageview.py good <predicted-boxes> <ground-truths>
+python imageview.py bad <predicted-boxes> <ground-truths>
+```
+"""
+
 import numpy as np
 import os
 from sys import argv
+from PIL import Image
 from scipy import ndimage, misc
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.widgets import Button, RadioButtons
 
-image_width = 896
-image_height = 896
+from converters import from_edges_to_centered, from_fullsize_to_relative
+from loaders import load_predicted_boxes, load_list_of_images
+from evaluate_detections import from_validation_output
+
+image_width = 1242
+image_height = 375
 pixel_depth = 255
 
 
@@ -73,13 +101,22 @@ def show_image_data(image, labels):
     plt.draw()
 
 
-def show_image(image_filename, label_filename=None):
-    if not label_filename:
+def show_image(image_filename, labels=None):
+    image = load_image(image_filename)
+
+    if not labels:
         label_filename = image_filename.replace('.jpg', '.txt') \
                                        .replace('/images/', '/labels/') \
                                        .replace('/JPEGImages/', '/labels/')
-    image = load_image(image_filename)
-    labels = load_labels(label_filename)
+        labels = load_labels(label_filename)
+    else:
+        im = Image.open(image_filename)
+        new_labels = []
+        for label in labels:
+            box = from_edges_to_centered(label[1:])
+            new_labels.append([0] + from_fullsize_to_relative(box, im.size))
+        labels = new_labels
+
     show_image_data(image, labels)
 
     plt.axes()
@@ -89,8 +126,9 @@ def show_image(image_filename, label_filename=None):
 class Index(object):
     ind = 0
 
-    def __init__(self, image_filenames, radio):
+    def __init__(self, image_filenames, labels, radio):
         self.image_filenames = image_filenames
+        self.labels = labels
         self.radio = radio
 
     def next(self, event):
@@ -102,27 +140,30 @@ class Index(object):
     def skip(self, amount):
         self.ind = (self.ind + amount) % len(self.image_filenames)
         plt.suptitle(self.ind, fontsize=14)
-        show_image(self.image_filenames[self.ind])
+        image_filename = self.image_filenames[self.ind]
+        image_id, _ = os.path.splitext(os.path.basename(image_filename))
+        show_image(self.image_filenames[self.ind], self.labels[image_id])
 
 
-def open_path(path):
+def open_path(path, labels):
     global bnext, bprev, bskip, radio
     image_filenames = map(lambda filename: os.path.join(path, filename),
                           filter(lambda filename: filename[0] != '.',
                                  os.listdir(path)))
     print 'Opened path:', path
-    open_list(image_filenames)
+    open_list(image_filenames, labels)
 
 
-def open_list(image_filenames):
+def open_list(image_filenames, labels):
     global bnext, bprev, bskip, radio
-    show_image(image_filenames[0])
+    image_id, _ = os.path.splitext(os.path.basename(image_filenames[0]))
+    show_image(image_filenames[0], labels[image_id])
     plt.suptitle(0, fontsize=14)
 
     rax = plt.axes([0.85, 0.15, 0.1, 0.15])
     radio = RadioButtons(rax, ('1', '5', '10', '100', '500', '1000'), 0)
 
-    callback = Index(image_filenames, radio)
+    callback = Index(image_filenames, labels, radio)
     axprev = plt.axes([0.85, 0.05, 0.05, 0.075])
     axnext = plt.axes([0.9, 0.05, 0.05, 0.075])
     bnext = Button(axnext, '>')
@@ -135,16 +176,26 @@ if __name__ == '__main__':
     ca = plt.gca()
 
     if argv[1]:
+        if argv[2]:
+            labels = load_predicted_boxes(argv[2])
+            for image_id in labels:
+                labels[image_id] = filter(lambda label: float(label[0]) > 0.2,
+                                          labels[image_id])
         if argv[1][-3:] == 'jpg':
             image_filename = argv[1]
-            show_image(image_filename)
+            show_image(image_filename, labels)
         elif argv[1][-3:] == 'txt':
-            with open(argv[1], 'r') as f:
-                image_filenames = map(lambda filename: filename.strip(),
-                                      f.readlines())
-                open_list(image_filenames)
+            image_filenames = load_list_of_images(argv[1])
+            open_list(image_filenames, labels)
+        elif argv[1] == 'good' or argv[1] == 'bad':
+            good_list, bad_list = from_validation_output(argv[2], argv[3])
+            print '%d good images, %s bad images' % (len(good_list), len(bad_list))
+            if argv[1] == 'good':
+                open_list(good_list, labels)
+            if argv[1] == 'bad':
+                open_list(bad_list, labels)
         else:
-            open_path(argv[1])
+            open_path(argv[1], labels)
     else:
         open_path('data/images/')
 

@@ -34,3 +34,16 @@ Open a list of images from a txt-file:
 ```
 python imageview.py good_list.txt
 ```
+
+### Browse good/bad detections:
+This is easier than using `evaluate_detections` directly.
+
+```
+python imageview.py good <predicted-boxes> <ground-truths>
+python imageview.py bad <predicted-boxes> <ground-truths>
+```
+
+Example:
+```
+python imageview.py good ../valid/exp_wide_graybg_manymodel.weights-kitti ../datasets/kitti/files.txt
+```

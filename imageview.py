@@ -189,7 +189,8 @@ if __name__ == '__main__':
             open_list(image_filenames, labels)
         elif argv[1] == 'good' or argv[1] == 'bad':
             good_list, bad_list = from_validation_output(argv[2], argv[3])
-            print '%d good images, %s bad images' % (len(good_list), len(bad_list))
+            print '%d good images, %s bad images' % (len(good_list),
+                                                     len(bad_list))
             if argv[1] == 'good':
                 open_list(good_list, labels)
             if argv[1] == 'bad':

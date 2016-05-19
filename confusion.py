@@ -6,9 +6,10 @@ import subprocess
 
 datasets_path = '../datasets'
 weights_path = '../weights'
-yolo_path = '/home/stiaje/darknet'
+yolo_path = '../darknet'
 
 output_dir = '../recall'
+valid_output_dir = '../valid'
 
 weight_files = os.listdir(weights_path)
 weight_files.sort()
@@ -74,6 +75,35 @@ def testAll(redo):
     testWeight(redo, weight)
     #testWeight(redo, weights_path + "/" + weight)
 
+def runValid(redo, dataset, weight_file):
+  if dataset == '.DS_Store':
+    return
+  if not weight_file.endswith(".weights"):
+    return  #folder?!
+  dataset_path = os.getcwd() + '/' + datasets_path+'/'+dataset+"/files.txt"
+  weight_path = os.getcwd() + '/' + weights_path+'/'+weight_file
+  outfile_name = os.getcwd() + '/' + valid_output_dir+'/valid-'+weight_file.split("/")[-1]+"-"+dataset
+  tempfile = os.getcwd() + '/' + yolo_path + '/kitti/validated_car.txt'
+  if(os.path.isfile(outfile_name)):
+    print '\nresult file already exists. Skipping: ' + outfile_name
+    return
+
+  print '\nStarting valid' + outfile_name
+
+  yolo_process = subprocess.Popen(["./darknet", 'yolo', 'valid', 'cfg/singleclass.cfg', weight_path, dataset_path], cwd=yolo_path, stdout=open(os.devnull, 'wb'))
+
+  if yolo_process.wait() != 0:
+    print "YOLO fail"
+  else:
+    print "\nCompleted valid " + outfile_name
+    os.rename(tempfile, outfile_name)
+
+
+def validAll(redo):
+  print 'Valid all files! Redo = ' + str(redo)
+  for weight in weight_files:
+    for dataset in dataset_files:
+      runValid(redo, dataset, weight)
 
 def kittiAll(redo):
   print 'Kitti on all files! Redo = ' + str(redo)
@@ -144,6 +174,10 @@ elif args['action'] == 'kitti':
     generateFilelists()
     kittiAll(False)
   kittiMatrix()
+elif args['action'] == 'valid':
+  print "valid!!"
+  generateFilelists()
+  validAll(False)
 else:
   print "invalid action!"
 

@@ -39,11 +39,11 @@ python imageview.py good_list.txt
 This is easier than using `evaluate_detections` directly.
 
 ```
-python imageview.py good <predicted-boxes> <ground-truths>
-python imageview.py bad <predicted-boxes> <ground-truths>
+python imageview.py good <weights-name> <ground-truths>
+python imageview.py bad <weights-name> <ground-truths>
 ```
 
 Example:
 ```
-python imageview.py good ../valid/exp_wide_graybg_manymodel.weights-kitti ../datasets/kitti/files.txt
+python imageview.py good exp_wide_graybg_manymodel kitti
 ```

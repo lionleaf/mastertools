@@ -18,8 +18,8 @@ python imageview.py good_list.txt
 
 Browse good/bad detections:
 ```
-python imageview.py good <predicted-boxes> <ground-truths>
-python imageview.py bad <predicted-boxes> <ground-truths>
+python imageview.py good <weights-name> <ground-truths>
+python imageview.py bad <weights-name> <ground-truths>
 ```
 """
 
@@ -39,6 +39,9 @@ from evaluate_detections import from_validation_output
 image_width = 1242
 image_height = 375
 pixel_depth = 255
+
+dataset_dir = '../datasets'
+valid_dir = '../valid'
 
 
 def load_image(image_filename):
@@ -176,19 +179,33 @@ if __name__ == '__main__':
     ca = plt.gca()
 
     if argv[1]:
-        if argv[2]:
-            labels = load_predicted_boxes(argv[2])
+        if argv[2] and argv[3]:
+            weights_identifier = argv[2]
+            dataset_identifier = argv[3]
+            valid_path = (os.getcwd() + '/' +
+                          valid_dir + '/valid-' +
+                          weights_identifier + '.weights-' +
+                          dataset_identifier)
+            dataset_path = (os.getcwd() + '/' +
+                            dataset_dir + '/' +
+                            dataset_identifier + '/files.txt')
+
+            labels = load_predicted_boxes(valid_path)
             for image_id in labels:
                 labels[image_id] = filter(lambda label: float(label[0]) > 0.2,
                                           labels[image_id])
         if argv[1][-3:] == 'jpg':
             image_filename = argv[1]
             show_image(image_filename, labels)
+
         elif argv[1][-3:] == 'txt':
             image_filenames = load_list_of_images(argv[1])
             open_list(image_filenames, labels)
+
         elif argv[1] == 'good' or argv[1] == 'bad':
-            good_list, bad_list = from_validation_output(argv[2], argv[3])
+            good_list, bad_list = from_validation_output(valid_path,
+                                                         dataset_path)
+
             print '%d good images, %s bad images' % (len(good_list),
                                                      len(bad_list))
             if argv[1] == 'good':

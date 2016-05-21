@@ -13,7 +13,7 @@ python evaluate_detections.py valid <predicted-boxes> <ground-truth-list>
 from os import path
 from sys import argv
 from PIL import Image
-from loaders import load_predicted_boxes
+from loaders import load_predicted_boxes, load_ground_truth
 import re
 
 
@@ -41,22 +41,35 @@ def calculate_area(rect):
     return (rect['xmax'] - rect['xmin']) * (rect['ymax'] - rect['ymin'])
 
 
+def detected_objects_in_image(boxes, detections_for_image,
+                              thresh=0.001, iou_thresh=0.5):
+    detected_objects = 0
+    for box in boxes:
+        ground_truth = parse_detection(box)
+        best_iou = 0
+        for detection in detections_for_image:
+            if detection['prob'] < thresh:
+                continue
+            intersection = calculate_intersection(ground_truth,
+                                                  detection)
+            union = (calculate_area(ground_truth) +
+                     calculate_area(detection) -
+                     intersection)
+            iou = intersection / float(union)
+            if iou > best_iou:
+                best_iou = iou
+        if best_iou >= iou_thresh:
+            detected_objects += 1
+    return detected_objects
+
+
 def from_validation_output(predictions, ground_truths):
     detections_per_image = load_predicted_boxes(predictions)
 
-    truths = {}
+    truths = load_ground_truth(ground_truths)
 
     with open(ground_truths, 'r') as listfile:
         files = map(lambda x: x.strip(), listfile.readlines())
-        for file in files:
-            basepath, _ = file.rsplit('.', 1)
-            labelfile = basepath.replace('images', 'labels') + '.txt'
-            _, basename = basepath.rsplit('/', 1)
-            with open(labelfile, 'r') as f:
-                truths[basename] = []
-                boxes = map(lambda x: x.strip(), f.readlines())
-                for box in boxes:
-                    truths[basename].append(box.split(' ')[1:])
 
     good_list = []
     bad_list = []
@@ -70,29 +83,17 @@ def from_validation_output(predictions, ground_truths):
         width, height = im.size
         boxes = truths[image]
         total_number_of_boxes += len(boxes)
-        detected_objects = 0
-        for box in boxes:
-            ground_truth = parse_detection(box)
-            best_iou = 0
-            for detection in detections_per_image[image]:
-                if detection[0] < 0.001:
-                    continue
-                test_result = {
-                    'xmin': float(detection[1]) / width,
-                    'ymin': float(detection[2]) / height,
-                    'xmax': float(detection[3]) / width,
-                    'ymax': float(detection[4]) / height,
-                }
-                intersection = calculate_intersection(ground_truth,
-                                                      test_result)
-                union = (calculate_area(ground_truth) +
-                         calculate_area(test_result) -
-                         intersection)
-                iou = intersection / float(union)
-                if iou > best_iou:
-                    best_iou = iou
-            if best_iou >= 0.5:
-                detected_objects += 1
+        detections = {
+            'prob': float(detections_per_image[image][0]),
+            'xmin': float(detections_per_image[image][1]) / width,
+            'ymin': float(detections_per_image[image][2]) / height,
+            'xmax': float(detections_per_image[image][3]) / width,
+            'ymax': float(detections_per_image[image][4]) / height,
+        }
+        detected_objects = detected_objects_in_image(
+            boxes,
+            detections
+        )
 
         if len(boxes) > 0 and float(detected_objects) / len(boxes) > 0:
             good_list.append(imagepath)

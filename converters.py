@@ -1,10 +1,10 @@
 def from_fullsize_to_relative(raw, image_size):
     width, height = image_size
     return [
-        raw[0] / width,
-        raw[1] / height,
-        raw[2] / width,
-        raw[3] / height
+        float(raw[0]) / width,
+        float(raw[1]) / height,
+        float(raw[2]) / width,
+        float(raw[3]) / height
     ]
 
 

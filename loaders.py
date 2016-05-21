@@ -12,6 +12,22 @@ def load_predicted_boxes(filename):
         return detections_per_image
 
 
+def load_ground_truth(filename):
+    with open(filename, 'r') as listfile:
+        files = map(lambda x: x.strip(), listfile.readlines())
+        truths = {}
+        for file in files:
+            basepath, _ = file.rsplit('.', 1)
+            labelfile = basepath.replace('images', 'labels') + '.txt'
+            _, basename = basepath.rsplit('/', 1)
+            with open(labelfile, 'r') as f:
+                truths[basename] = []
+                boxes = map(lambda x: x.strip(), f.readlines())
+                for box in boxes:
+                    truths[basename].append(box.split(' ')[1:])
+        return truths
+
+
 def load_list_of_images(filename):
     with open(filename, 'r') as f:
         filenames = filter(lambda filename: filename[0] != '#',

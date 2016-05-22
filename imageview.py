@@ -145,7 +145,8 @@ class Index(object):
         plt.suptitle(self.ind, fontsize=14)
         image_filename = self.image_filenames[self.ind]
         image_id, _ = os.path.splitext(os.path.basename(image_filename))
-        show_image(self.image_filenames[self.ind], self.labels[image_id])
+        image_labels = self.labels[image_id] if self.labels else None
+        show_image(self.image_filenames[self.ind], image_labels)
 
 
 def open_path(path, labels):
@@ -160,7 +161,8 @@ def open_path(path, labels):
 def open_list(image_filenames, labels):
     global bnext, bprev, bskip, radio
     image_id, _ = os.path.splitext(os.path.basename(image_filenames[0]))
-    show_image(image_filenames[0], labels[image_id])
+    image_labels = labels[image_id] if labels else None
+    show_image(image_filenames[0], image_labels)
     plt.suptitle(0, fontsize=14)
 
     rax = plt.axes([0.85, 0.15, 0.1, 0.15])
@@ -179,7 +181,8 @@ if __name__ == '__main__':
     ca = plt.gca()
 
     if argv[1]:
-        if argv[2] and argv[3]:
+        labels = None
+        if len(argv) >= 4:
             weights_identifier = argv[2]
             dataset_identifier = argv[3]
             valid_path = (os.getcwd() + '/' +
@@ -192,7 +195,7 @@ if __name__ == '__main__':
 
             labels = load_predicted_boxes(valid_path)
             for image_id in labels:
-                labels[image_id] = filter(lambda label: float(label[0]) > 0.2,
+                labels[image_id] = filter(lambda label: float(label[0]) > 0.1,
                                           labels[image_id])
         if argv[1][-3:] == 'jpg':
             image_filename = argv[1]

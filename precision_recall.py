@@ -7,6 +7,7 @@ from PIL import Image
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn import metrics
 from evaluate_detections import detected_objects_in_image
 from loaders import load_ground_truth, load_predicted_boxes
 
@@ -66,6 +67,9 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
 
     recall_list.append(0.)
     precision_list.append(1.)
+
+    average_precision = metrics.auc(recall_list, precision_list)
+    print 'AP:', average_precision
 
     plt.clf()
     plt.plot(recall_list, precision_list, label='Precision-Recall curve')

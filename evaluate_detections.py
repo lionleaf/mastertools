@@ -46,7 +46,6 @@ def detected_objects_in_image(boxes, detections_for_image,
     detected_objects = 0
     for box in boxes:
         ground_truth = parse_detection(box)
-        best_iou = 0
         for detection in detections_for_image:
             if detection['prob'] < thresh:
                 continue
@@ -56,10 +55,9 @@ def detected_objects_in_image(boxes, detections_for_image,
                      calculate_area(detection) -
                      intersection)
             iou = intersection / float(union)
-            if iou > best_iou:
-                best_iou = iou
-        if best_iou >= iou_thresh:
-            detected_objects += 1
+            if iou > iou_thresh:
+                detected_objects += 1
+                break
     return detected_objects
 
 
@@ -83,13 +81,15 @@ def from_validation_output(predictions, ground_truths):
         width, height = im.size
         boxes = truths[image]
         total_number_of_boxes += len(boxes)
-        detections = {
-            'prob': float(detections_per_image[image][0]),
-            'xmin': float(detections_per_image[image][1]) / width,
-            'ymin': float(detections_per_image[image][2]) / height,
-            'xmax': float(detections_per_image[image][3]) / width,
-            'ymax': float(detections_per_image[image][4]) / height,
-        }
+        detections = []
+        for detection in detections_per_image[image]:
+            detections.append({
+                'prob': float(detection[0]),
+                'xmin': float(detection[1]) / width,
+                'ymin': float(detection[2]) / height,
+                'xmax': float(detection[3]) / width,
+                'ymax': float(detection[4]) / height,
+            })
         detected_objects = detected_objects_in_image(
             boxes,
             detections

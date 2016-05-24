@@ -44,20 +44,21 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
     accumulated_false_negatives = 0
     recall_list = []
     precision_list = []
-    for i in np.arange(0, 1, 0.005):
+    for i in np.arange(0, 1, 0.002):
         for image in predicted_boxes:
-            image = identifier_from_path(imagepath)
             boxes = ground_truth[image]
             detected_objects = detected_objects_in_image(
                 boxes,
                 predicted_boxes[image],
                 thresh=i
             )
+            false_positives = (len(filter(lambda x: x['prob'] > i,
+                                         predicted_boxes[image]))
+                               - detected_objects)
 
             total_number_of_boxes += len(boxes)
             accumulated_true_positives += detected_objects
-            accumulated_false_positives += (len(predicted_boxes[image])
-                                            - len(boxes))
+            accumulated_false_positives += false_positives
             accumulated_false_negatives += len(boxes) - detected_objects
 
         recall = float(accumulated_true_positives) / total_number_of_boxes
@@ -72,7 +73,6 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
     precision_list.append(1.)
 
     average_precision = metrics.auc(recall_list, precision_list)
-    print 'AP:', average_precision
 
     return recall_list, precision_list, average_precision
 
@@ -131,8 +131,9 @@ if __name__ == '__main__':
     if len(argv) > 2:
         (recall_list,
          precision_list,
-         _) = load_and_calculate_precision_recall(argv[1], argv[2])
+         average_precision) = load_and_calculate_precision_recall(argv[1], argv[2])
 
+        print 'AP:', average_precision
         plot_graph(recall_list, precision_list)
     else:
         weight_files = sorted(os.listdir(weights_dir))
@@ -143,4 +144,7 @@ if __name__ == '__main__':
             weight, _ = weight.split('.', 1)
             for dataset in dataset_files:
                 print '### %s - %s ###' % (weight, dataset)
-                load_and_calculate_precision_recall(weight, dataset)
+                try:
+                    load_and_calculate_precision_recall(weight, dataset)
+                except IOError as e:
+                    print e

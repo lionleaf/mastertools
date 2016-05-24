@@ -54,7 +54,7 @@ def detected_objects_in_image(boxes, detections_for_image,
             union = (calculate_area(ground_truth) +
                      calculate_area(detection) -
                      intersection)
-            iou = intersection / float(union)
+            iou = intersection / float(union) if union > 0 else 0
             if iou > iou_thresh:
                 detected_objects += 1
                 break

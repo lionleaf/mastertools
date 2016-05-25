@@ -36,8 +36,8 @@ from converters import from_edges_to_centered, from_fullsize_to_relative
 from loaders import load_predicted_boxes, load_list_of_images
 from evaluate_detections import from_validation_output
 
-image_width = 1242
-image_height = 375
+image_width = 448
+image_height = 448
 pixel_depth = 255
 
 dataset_dir = '../datasets'

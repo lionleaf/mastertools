@@ -53,7 +53,7 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
                 thresh=i
             )
             false_positives = (len(filter(lambda x: x['prob'] > i,
-                                         predicted_boxes[image]))
+                                          predicted_boxes[image]))
                                - detected_objects)
 
             total_number_of_boxes += len(boxes)
@@ -85,7 +85,7 @@ def plot_graph(recall_list, precision_list):
     plt.ylim([0.0, 1.05])
     plt.xlim([0.0, 1.0])
     plt.title('Precision-Recall')
-    plt.legend(loc="upper right")
+    plt.legend(loc='upper right')
     plt.show()
 
 
@@ -126,12 +126,13 @@ def load_and_calculate_precision_recall(weights_identifier,
         }))
     return recall_list, precision_list, average_precision
 
+
 def dump_row(output, dataset):
-    if dataset == ".DS_Store":
+    if dataset == '.DS_Store':
         return
     output.write(dataset)
     for weight in weight_files:
-        if not weight.endswith(".weights"):
+        if not weight.endswith('.weights'):
             continue
         outfile_name = prerec_dir + '/prerec-' + weight + '-' + dataset
         try:
@@ -147,17 +148,25 @@ if __name__ == '__main__':
     if len(argv) > 2:
         (recall_list,
          precision_list,
-         average_precision) = load_and_calculate_precision_recall(argv[1], argv[2])
+         average_precision) = load_and_calculate_precision_recall(argv[1],
+                                                                  argv[2])
 
         print 'AP: {0:.2%}'.format(average_precision)
-        plot_graph(recall_list, precision_list)
+        if len(argv) == 4 and argv[3] == 'latex':
+            data = zip(precision_list, recall_list)
+            print ''
+            print 'Precision Recall'
+            for precision, recall in data:
+                print precision, recall
+        else:
+            plot_graph(recall_list, precision_list)
     elif len(argv) == 2 and argv[1] == 'matrix':
         weight_files = sorted(os.listdir(weights_dir))
         dataset_files = sorted(os.listdir(dataset_dir))
 
         with open(prerec_dir + '/matrix.txt', 'a') as output:
             for weight in weight_files:
-                if not weight.endswith(".weights"):
+                if not weight.endswith('.weights'):
                     continue
                 output.write(',' + weight)
             output.write('\n')

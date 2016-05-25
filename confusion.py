@@ -22,7 +22,7 @@ dataset_files.sort()
 print dataset_files
 
 #Generates the files.txt file required for yolo to read the dataset for all datasets in the folder
-def generateFilelists(nr_of_files = 0):
+def generateFilelists(nr_of_files=None):
   print 'generating file lists. nr_of_files=' + str(nr_of_files)
   for dataset in dataset_files:
     nr = 0
@@ -50,10 +50,13 @@ def runRecall(redo, dataset, weight_file):
     return
   if not weight_file.endswith(".weights"):
     return  #folder?!
-  dataset_path = os.getcwd() + '/' + datasets_path+'/'+dataset+"/files.txt"
-  weight_path = os.getcwd() + '/' + weights_path+'/'+weight_file
-  outfile_name = output_dir+'/'+weight_file.split("/")[-1]+"-"+dataset
-  if(os.path.isfile(outfile_name)):
+  dataset_path = os.getcwd() + '/' + datasets_path+'/' + dataset + '/files.txt'
+  weight_path = os.getcwd() + '/' + weights_path + '/' + weight_file
+  outfile_name = output_dir + '/' + weight_file + '-' + dataset
+  new_directory = os.path.dirname(output_dir + '/' + weight_file)
+  if not os.path.exists(new_directory):
+    os.makedirs(new_directory)
+  if os.path.isfile(outfile_name):
     print '\nresult file already exists. Skipping: ' + outfile_name
     return
   outfile = open(outfile_name,'a')
@@ -105,17 +108,25 @@ def validAll(redo):
     for dataset in dataset_files:
       runValid(redo, dataset, weight)
 
+
 def kittiAll(redo):
   print 'Kitti on all files! Redo = ' + str(redo)
   for weight in weight_files:
     runRecall(redo, 'kitti', weight)
 
 
-def dumpRow(output, dataset):
+def weightsOverTime(redo, weight_folder):
+  print 'Kitti on all files! Redo = ' + str(redo)
+  weight_files_over_time = sorted(os.listdir(weights_path + '/' + weight_folder))
+  for weight in weight_files_over_time:
+    runRecall(redo, 'kitti', weight_folder + '/' + weight)
+
+
+def dumpRow(output, dataset, custom_weight_files=None):
   if dataset == ".DS_Store":
     return
   output.write(dataset)
-  for weight in weight_files:
+  for weight in (custom_weight_files or weight_files):
     if not weight.endswith(".weights"):
       continue
     outfile_name = output_dir+'/'+weight+"-"+dataset
@@ -127,6 +138,21 @@ def dumpRow(output, dataset):
     except:
       output.write("," + "N/A")
   output.write('\n')
+
+
+def customMatrix(weights_folder):
+
+  print '\ngenerating custom matrix'
+  output = open(output_dir + '/' + weights_folder + '/matrix.txt', 'a')
+
+  weight_files_over_time = sorted(os.listdir(weights_path + '/' + weights_folder))
+  for weight in weight_files_over_time:
+    output.write(',' + weight)
+  output.write('\n')
+  dumpRow(output, 'kitti',
+          map(lambda x: weights_folder + '/' + x, weight_files_over_time))
+  output.write('\n\n\n')
+  output.close()
 
 
 def kittiMatrix():
@@ -158,6 +184,7 @@ def generateMatrix(outfile):
 
 parser = argparse.ArgumentParser(description='Description of your program')
 parser.add_argument('action', help='matrix for the matrix, kitti for only kitti, kittiplot for plotting kitti performance over training time')
+parser.add_argument('weights_folder', nargs='?', help='name of weights folder')
 parser.add_argument('-n','--nocalc', help='Skip the calculation and just compile the result file', action='store_true', required=False)
 args = vars(parser.parse_args())
 
@@ -174,6 +201,12 @@ elif args['action'] == 'kitti':
     generateFilelists()
     kittiAll(False)
   kittiMatrix()
+elif args['action'] == 'weightsovertime':
+  print "weightsovertime!!"
+  if not args['nocalc']:
+    generateFilelists()
+    weightsOverTime(False, args['weights_folder'])
+  customMatrix(args['weights_folder'])
 elif args['action'] == 'valid':
   print "valid!!"
   generateFilelists()

@@ -85,7 +85,7 @@ def plot_graph(recall_list, precision_list):
     plt.ylim([0.0, 1.05])
     plt.xlim([0.0, 1.0])
     plt.title('Precision-Recall')
-    plt.legend(loc='lower left')
+    plt.legend(loc="upper right")
     plt.show()
 
 

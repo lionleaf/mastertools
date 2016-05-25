@@ -126,6 +126,22 @@ def load_and_calculate_precision_recall(weights_identifier,
         }))
     return recall_list, precision_list, average_precision
 
+def dump_row(output, dataset):
+    if dataset == ".DS_Store":
+        return
+    output.write(dataset)
+    for weight in weight_files:
+        if not weight.endswith(".weights"):
+            continue
+        outfile_name = prerec_dir + '/prerec-' + weight + '-' + dataset
+        try:
+            outfile = open(outfile_name, 'r')
+            data = json.loads(outfile.read())
+            output.write(',{0:.2%}'.format(data['average_precision']))
+        except:
+            output.write(',N/A')
+    output.write('\n')
+
 
 if __name__ == '__main__':
     if len(argv) > 2:
@@ -133,8 +149,23 @@ if __name__ == '__main__':
          precision_list,
          average_precision) = load_and_calculate_precision_recall(argv[1], argv[2])
 
-        print 'AP:', average_precision
+        print 'AP: {0:.2%}'.format(average_precision)
         plot_graph(recall_list, precision_list)
+    elif len(argv) == 2 and argv[1] == 'matrix':
+        weight_files = sorted(os.listdir(weights_dir))
+        dataset_files = sorted(os.listdir(dataset_dir))
+
+        with open(prerec_dir + '/matrix.txt', 'a') as output:
+            for weight in weight_files:
+                if not weight.endswith(".weights"):
+                    continue
+                output.write(',' + weight)
+            output.write('\n')
+
+            for dataset in dataset_files:
+                dump_row(output, dataset)
+
+            output.write('\n\n\n')
     else:
         weight_files = sorted(os.listdir(weights_dir))
         dataset_files = sorted(os.listdir(dataset_dir))

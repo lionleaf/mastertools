@@ -4,6 +4,7 @@ Calculate and plot precision/recall curves
 
 from sys import argv
 from PIL import Image
+import math
 import os
 import json
 import numpy as np
@@ -44,7 +45,7 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
     accumulated_false_negatives = 0
     recall_list = []
     precision_list = []
-    for i in np.arange(0, 1, 0.002):
+    for i in math.log10(np.arange(1, 10.02, 0.02)):
         for image in predicted_boxes:
             boxes = ground_truth[image]
             detected_objects = detected_objects_in_image(

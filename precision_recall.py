@@ -39,13 +39,13 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
                 'ymax': float(detection[4]) / height,
             }
 
-    total_number_of_boxes = 0
-    accumulated_true_positives = 0
-    accumulated_false_positives = 0
-    accumulated_false_negatives = 0
     recall_list = []
     precision_list = []
-    for i in math.log10(np.arange(1, 10.02, 0.02)):
+    for i in map(math.log10, np.arange(1, 10.02, 0.02)):
+        total_number_of_boxes = 0
+        accumulated_true_positives = 0
+        accumulated_false_positives = 0
+        accumulated_false_negatives = 0
         for image in predicted_boxes:
             boxes = ground_truth[image]
             detected_objects = detected_objects_in_image(
@@ -62,6 +62,9 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
             accumulated_false_positives += false_positives
             accumulated_false_negatives += len(boxes) - detected_objects
 
+        if accumulated_true_positives + accumulated_true_positives == 0:
+            break
+
         recall = float(accumulated_true_positives) / total_number_of_boxes
         precision = (float(accumulated_true_positives) /
                      (accumulated_true_positives +
@@ -73,7 +76,10 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
     recall_list.append(0.)
     precision_list.append(1.)
 
-    average_precision = metrics.auc(recall_list, precision_list)
+    try:
+        average_precision = metrics.auc(recall_list, precision_list)
+    except:
+        average_precision = 0.0
 
     return recall_list, precision_list, average_precision
 

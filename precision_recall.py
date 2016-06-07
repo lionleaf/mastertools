@@ -81,7 +81,7 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
             accumulated_false_positives += false_positives
             accumulated_false_negatives += len(boxes) - detected_objects
 
-        if accumulated_true_positives + accumulated_true_positives == 0:
+        if accumulated_true_positives + accumulated_false_positives == 0:
             break
 
         recall = float(accumulated_true_positives) / total_number_of_boxes

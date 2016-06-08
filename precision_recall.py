@@ -16,6 +16,7 @@ weights_dir = '../weights'
 dataset_dir = '../datasets'
 valid_dir = '../valid'
 prerec_dir = '../prerec'
+latex_dir = '../latex'
 
 
 def identifier_from_path(imagepath):
@@ -160,14 +161,34 @@ if __name__ == '__main__':
                                                                   argv[2])
 
         print 'AP: {0:.2%}'.format(average_precision)
-        if len(argv) == 4 and argv[3] == 'latex':
-            data = zip(precision_list, recall_list)
-            print ''
-            print 'Precision Recall'
-            for precision, recall in data:
-                print precision, recall
-        else:
-            plot_graph(recall_list, precision_list)
+        plot_graph(recall_list, precision_list)
+    elif len(argv) == 2 and argv[1] == 'latex':
+        weight_files = sorted(os.listdir(weights_dir))
+        dataset_files = sorted(os.listdir(dataset_dir))
+
+        for weight in weight_files:
+            if not weight.endswith('.weights'):
+                continue
+            weights_identifier, _ = weight.split('.', 1)
+
+            for dataset in dataset_files:
+                try:
+                    (
+                        recall_list, precision_list, average_precision
+                    ) = load_and_calculate_precision_recall(weights_identifier,
+                                                            dataset)
+                except IOError as e:
+                    print e
+                    continue
+                filename = weights_identifier + '-' + dataset + '.txt'
+                with open(latex_dir + '/' + filename, 'w') as f:
+                    f.write('Precision Recall\n')
+                    data = zip(precision_list, recall_list)
+                    for precision, recall in data:
+                        f.write('%f %f\n' % (precision, recall))
+                filename = weights_identifier + '-' + dataset + '_ap.txt'
+                with open(latex_dir + '/' + filename, 'w') as f:
+                    f.write('{0:.2%}\n'.format(average_precision))
     elif len(argv) == 2 and argv[1] == 'matrix':
         weight_files = sorted(os.listdir(weights_dir))
         dataset_files = sorted(os.listdir(dataset_dir))

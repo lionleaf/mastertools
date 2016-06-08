@@ -8,7 +8,6 @@ import math
 import os
 import json
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn import metrics
 from evaluate_detections import detected_objects_in_image
 from loaders import load_ground_truth, load_predicted_boxes
@@ -85,6 +84,8 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
 
 
 def plot_graph(recall_list, precision_list):
+    import matplotlib.pyplot as plt
+
     plt.clf()
     plt.plot(recall_list, precision_list, label='Precision-Recall curve')
     plt.xlabel('Recall')
@@ -115,8 +116,8 @@ def load_and_calculate_precision_recall(weights_identifier,
     dataset_path = (os.getcwd() + '/' +
                     dataset_dir + '/' +
                     dataset_identifier + '/files.txt')
-    ground_truth = load_ground_truth(dataset_path)
     predicted_boxes = load_predicted_boxes(valid_path)
+    ground_truth = load_ground_truth(dataset_path)
     with open(dataset_path, 'r') as f:
         files = map(lambda x: x.strip(), f.readlines())
 

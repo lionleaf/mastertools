@@ -25,6 +25,25 @@ def identifier_from_path(imagepath):
     return image
 
 
+def calculate_f_measure(precision_list, recall_list):
+    max_f_measure = 0
+    max_i = None
+    for i in range(len(precision_list)):
+        precision = precision_list[i]
+        recall = recall_list[i]
+        if precision == 0 and recall == 0:
+            continue
+        f = 2.0 * precision * recall / (precision + recall)
+        if f >= max_f_measure:
+            max_f_measure = f
+            max_i = i
+    return {
+        'value': max_f_measure,
+        'precision': precision_list[max_i],
+        'recall': recall_list[max_i],
+    }
+
+
 def calculate_precision_recall(ground_truth, predicted_boxes, files):
     for imagepath in files:
         im = Image.open(imagepath)
@@ -81,7 +100,9 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
     except:
         average_precision = 0.0
 
-    return recall_list, precision_list, average_precision
+    f_measure = calculate_f_measure(precision_list, recall_list)
+
+    return recall_list, precision_list, average_precision, f_measure
 
 
 def plot_graph(recall_list, precision_list):
@@ -107,9 +128,15 @@ def load_and_calculate_precision_recall(weights_identifier,
     if os.path.isfile(prerec_path):
         with open(prerec_path, 'r') as f:
             data = json.loads(f.read())
+            if 'f_measure' not in data:
+                data['f_measure'] = calculate_f_measure(data['precision_list'],
+                                                        data['recall_list'])
+                with open(prerec_path, 'w') as f:
+                    f.write(json.dumps(data))
             return (data['recall_list'],
                     data['precision_list'],
-                    data['average_precision'])
+                    data['average_precision'],
+                    data['f_measure'])
     valid_path = (os.getcwd() + '/' +
                   valid_dir + '/valid-' +
                   weights_identifier + '.weights-' +
@@ -124,16 +151,18 @@ def load_and_calculate_precision_recall(weights_identifier,
 
     (recall_list,
      precision_list,
-     average_precision) = calculate_precision_recall(ground_truth,
-                                                     predicted_boxes,
-                                                     files)
+     average_precision,
+     f_measure) = calculate_precision_recall(ground_truth,
+                                             predicted_boxes,
+                                             files)
     with open(prerec_path, 'w') as f:
         f.write(json.dumps({
             'recall_list': recall_list,
             'precision_list': precision_list,
             'average_precision': average_precision,
+            'f_measure': f_measure,
         }))
-    return recall_list, precision_list, average_precision
+    return recall_list, precision_list, average_precision, f_measure
 
 
 def dump_row(output, dataset):
@@ -157,8 +186,9 @@ if __name__ == '__main__':
     if len(argv) > 2:
         (recall_list,
          precision_list,
-         average_precision) = load_and_calculate_precision_recall(argv[1],
-                                                                  argv[2])
+         average_precision,
+         f_measure) = load_and_calculate_precision_recall(argv[1],
+                                                          argv[2])
 
         print 'AP: {0:.2%}'.format(average_precision)
         plot_graph(recall_list, precision_list)
@@ -174,21 +204,35 @@ if __name__ == '__main__':
             for dataset in dataset_files:
                 try:
                     (
-                        recall_list, precision_list, average_precision
+                        recall_list, precision_list, average_precision,
+                        f_measure
                     ) = load_and_calculate_precision_recall(weights_identifier,
                                                             dataset)
                 except IOError as e:
                     print e
                     continue
+
                 filename = weights_identifier + '-' + dataset + '.txt'
                 with open(latex_dir + '/' + filename, 'w') as f:
                     f.write('Precision Recall\n')
                     data = zip(precision_list, recall_list)
                     for precision, recall in data:
                         f.write('%f %f\n' % (precision, recall))
+
                 filename = weights_identifier + '-' + dataset + '_ap.txt'
                 with open(latex_dir + '/' + filename, 'w') as f:
                     f.write('{0:.2%}\n'.format(average_precision))
+
+                filename = weights_identifier + '-' + dataset + '_f.txt'
+                with open(latex_dir + '/' + filename, 'w') as f:
+                    f.write('%f\n' % f_measure['value'])
+
+                filename = weights_identifier + '-' + dataset + '_f_pos.txt'
+                with open(latex_dir + '/' + filename, 'w') as f:
+                    f.write('Precision Recall\n')
+                    f.write('%f %f\n' % (f_measure['precision'],
+                                         f_measure['recall']))
+
     elif len(argv) == 2 and argv[1] == 'matrix':
         weight_files = sorted(os.listdir(weights_dir))
         dataset_files = sorted(os.listdir(dataset_dir))

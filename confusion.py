@@ -93,7 +93,11 @@ def runValid(redo, dataset, weight_file):
 
   print '\nStarting valid' + outfile_name
 
-  yolo_process = subprocess.Popen(["./darknet", 'yolo', 'valid', 'cfg/singleclass.cfg', weight_path, dataset_path], cwd=yolo_path, stdout=open(os.devnull, 'wb'))
+  cfg_file = 'cfg/singleclass.cfg'
+  if weight_file.endswith('_large.weights'):
+    cfg_file = 'cfg/singleclass_large.cfg'
+
+  yolo_process = subprocess.Popen(["./darknet", 'yolo', 'valid', cfg_file, weight_path, dataset_path], cwd=yolo_path, stdout=open(os.devnull, 'wb'))
 
   if yolo_process.wait() != 0:
     print "YOLO fail"

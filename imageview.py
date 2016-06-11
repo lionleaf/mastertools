@@ -42,6 +42,7 @@ pixel_depth = 255
 
 dataset_dir = '../datasets'
 valid_dir = '../valid'
+output_dir = '../saved_images'
 
 
 def load_image(image_filename):
@@ -123,6 +124,7 @@ def show_image(image_filename, labels=None):
     show_image_data(image, labels)
 
     plt.axes()
+    plt.axis('off')
     plt.title(image_filename, fontsize=14)
 
 
@@ -133,6 +135,14 @@ class Index(object):
         self.image_filenames = image_filenames
         self.labels = labels
         self.radio = radio
+
+    def save(self, event):
+        global image_display
+        image_filename = os.path.normpath(self.image_filenames[self.ind])
+        parent_directories = os.path.dirname(image_filename).split(os.sep)
+        dataset_name = parent_directories[-2]
+        plt.savefig(output_dir + '/' + dataset_name + '_' +
+                    os.path.basename(image_filename))
 
     def next(self, event):
         self.skip(int(self.radio.value_selected))
@@ -159,7 +169,7 @@ def open_path(path, labels):
 
 
 def open_list(image_filenames, labels):
-    global bnext, bprev, bskip, radio
+    global bnext, bprev, bskip, radio, bsave
     image_id, _ = os.path.splitext(os.path.basename(image_filenames[0]))
     image_labels = labels[image_id] if labels else None
     show_image(image_filenames[0], image_labels)
@@ -169,8 +179,12 @@ def open_list(image_filenames, labels):
     radio = RadioButtons(rax, ('1', '5', '10', '100', '500', '1000'), 0)
 
     callback = Index(image_filenames, labels, radio)
+    axsave = plt.axes([0.75, 0.05, 0.05, 0.075])
     axprev = plt.axes([0.85, 0.05, 0.05, 0.075])
     axnext = plt.axes([0.9, 0.05, 0.05, 0.075])
+
+    bsave = Button(axsave, 'Save')
+    bsave.on_clicked(callback.save)
     bnext = Button(axnext, '>')
     bnext.on_clicked(callback.next)
     bprev = Button(axprev, '<')

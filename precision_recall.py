@@ -49,6 +49,8 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
         im = Image.open(imagepath)
         width, height = im.size
         image = identifier_from_path(imagepath)
+        if image not in predicted_boxes:
+            continue
         for i, detection in enumerate(predicted_boxes[image]):
             predicted_boxes[image][i] = {
                 'prob': float(detection[0]),

@@ -74,9 +74,9 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
                 predicted_boxes[image],
                 thresh=i
             )
-            false_positives = (len(filter(lambda x: x['prob'] > i,
-                                          predicted_boxes[image])) -
-                               detected_objects)
+            positives = len(filter(lambda x: x['prob'] >= i,
+                                   predicted_boxes[image]))
+            false_positives = max(0, positives - detected_objects)
 
             total_number_of_boxes += len(boxes)
             accumulated_true_positives += detected_objects

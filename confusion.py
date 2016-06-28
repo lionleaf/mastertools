@@ -91,6 +91,11 @@ def runValid(redo, dataset, weight_file):
     print '\nresult file already exists. Skipping: ' + outfile_name
     return
 
+  with open(dataset_path) as f:
+    if len(f.readlines()) == 0:
+      print '\nEmpty files.txt. Skipping: ' + outfile_name
+      return
+
   print '\nStarting valid' + outfile_name
 
   cfg_file = 'cfg/singleclass.cfg'

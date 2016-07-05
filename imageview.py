@@ -99,7 +99,7 @@ def show_image_data(image, labels):
         rectangle = Rectangle((box[1]*image_width - box[3]*image_width*0.5,
                                box[2]*image_height - box[4]*image_height*0.5),
                               box[3]*image_width, box[4]*image_height,
-                              ec='red', fill=False)
+                              ec='red', fill=False, linewidth=3)
         patches.append(rectangle)
         ca.add_patch(rectangle)
     plt.draw()

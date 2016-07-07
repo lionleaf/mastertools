@@ -1,3 +1,6 @@
+import os
+
+
 def load_predicted_boxes(filename):
     with open(filename, 'r') as f:
         contents = map(lambda line: line.strip(), f.readlines())
@@ -26,6 +29,24 @@ def load_ground_truth(filename):
                 for box in boxes:
                     truths[basename].append(box.split(' ')[1:])
         return truths
+
+
+def load_dont_care(filename):
+    with open(filename, 'r') as listfile:
+        files = map(lambda x: x.strip(), listfile.readlines())
+        dontcares = {}
+        for file in files:
+            basepath, _ = file.rsplit('.', 1)
+            dontcarefile = basepath.replace('images', 'dontcare') + '.txt'
+            if not os.path.exists(dontcarefile):
+                break
+            _, basename = basepath.rsplit('/', 1)
+            with open(dontcarefile, 'r') as f:
+                dontcares[basename] = []
+                boxes = map(lambda x: x.strip(), f.readlines())
+                for box in boxes:
+                    dontcares[basename].append(box.split(' ')[1:])
+        return dontcares
 
 
 def load_list_of_images(filename):

@@ -10,7 +10,7 @@ import json
 import numpy as np
 from sklearn import metrics
 from evaluate_detections import detected_objects_in_image
-from loaders import load_ground_truth, load_predicted_boxes
+from loaders import load_ground_truth, load_predicted_boxes, load_dont_care
 
 weights_dir = '../weights'
 dataset_dir = '../datasets'
@@ -44,7 +44,8 @@ def calculate_f_measure(precision_list, recall_list):
     }
 
 
-def calculate_precision_recall(ground_truth, predicted_boxes, files):
+def calculate_precision_recall(ground_truth, predicted_boxes, files,
+                               dontcare=None):
     for imagepath in files:
         im = Image.open(imagepath)
         width, height = im.size
@@ -76,7 +77,17 @@ def calculate_precision_recall(ground_truth, predicted_boxes, files):
             )
             positives = len(filter(lambda x: x['prob'] >= i,
                                    predicted_boxes[image]))
-            false_positives = max(0, positives - detected_objects)
+
+            safe_false_detections = 0
+            if dontcare:
+                safe_false_detections = detected_objects_in_image(
+                    dontcare[image],
+                    predicted_boxes[image],
+                    thresh=i
+                )
+            false_positives = max(0,
+                                  positives - detected_objects -
+                                  safe_false_detections)
 
             total_number_of_boxes += len(boxes)
             accumulated_true_positives += detected_objects
@@ -148,6 +159,7 @@ def load_and_calculate_precision_recall(weights_identifier,
                     dataset_identifier + '/files.txt')
     predicted_boxes = load_predicted_boxes(valid_path)
     ground_truth = load_ground_truth(dataset_path)
+    dontcare = load_dont_care(dataset_path)
     with open(dataset_path, 'r') as f:
         files = map(lambda x: x.strip(), f.readlines())
 
@@ -156,7 +168,7 @@ def load_and_calculate_precision_recall(weights_identifier,
      average_precision,
      f_measure) = calculate_precision_recall(ground_truth,
                                              predicted_boxes,
-                                             files)
+                                             files, dontcare=dontcare)
     with open(prerec_path, 'w') as f:
         f.write(json.dumps({
             'recall_list': recall_list,

@@ -45,6 +45,8 @@ def detected_objects_in_image(boxes, detections_for_image,
                               thresh=0.001, iou_thresh=0.5):
     detected_objects = 0
     for box in boxes:
+        if len(box) == 0:
+            continue
         ground_truth = parse_detection(box)
         for detection in detections_for_image:
             if detection['prob'] < thresh:

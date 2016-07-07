@@ -137,12 +137,14 @@ class Index(object):
         self.radio = radio
 
     def save(self, event):
-        global image_display
+        global image_display, weights_identifier
         image_filename = os.path.normpath(self.image_filenames[self.ind])
         parent_directories = os.path.dirname(image_filename).split(os.sep)
         dataset_name = parent_directories[-2]
-        plt.savefig(output_dir + '/' + dataset_name + '_' +
-                    os.path.basename(image_filename))
+        middle_part = (weights_identifier + '_') if weights_identifier else ''
+        output_filename = (dataset_name + '_' + middle_part +
+                           os.path.basename(image_filename))
+        plt.savefig(output_dir + '/' + output_filename)
 
     def next(self, event):
         self.skip(int(self.radio.value_selected))
@@ -208,8 +210,9 @@ if __name__ == '__main__':
                             dataset_identifier + '/files.txt')
 
             labels = load_predicted_boxes(valid_path)
+            threshold = float(argv[4]) if len(argv) >= 5 else 0.2
             for image_id in labels:
-                labels[image_id] = filter(lambda label: float(label[0]) > 0.1,
+                labels[image_id] = filter(lambda label: float(label[0]) > threshold,
                                           labels[image_id])
         if argv[1][-3:] == 'jpg':
             image_filename = argv[1]
